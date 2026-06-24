@@ -49,6 +49,7 @@ Enregistrement des choix validés (widget + discussion). Date de référence : 2
 | D-016 | Enchaîner **workspace + mcrust-wire** (VarInt, string MC, re-export NBT). |
 | D-017 | **P2–P3 livrés** : `mcrust-java` (TCP status multi-proto 767/768/769), `mcrust-bedrock` (UDP unconnected pong), binaire `mcrust` démarre les deux listeners. |
 | D-018 | **Prochain** : P5 auth Java online + play minimal, P6 Bedrock login (RakNet crate `tokio-raknet` ou `rust-raknet` à l’intégration). |
+| D-019 | **P5/P7 livrés** : `mcrust-core` tick, `mcrust-bridge`, Java login+AES+hasJoined, play join/position/keep-alive. **P6** : unconnected ping + stub offline uniquement. |
 
 ## Liens
 

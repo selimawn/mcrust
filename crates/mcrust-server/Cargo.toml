@@ -15,7 +15,10 @@ mcrust-wire = { path = "../mcrust-wire" }
 mcrust-protocol = { path = "../mcrust-protocol" }
 mcrust-java = { path = "../mcrust-java" }
 mcrust-bedrock = { path = "../mcrust-bedrock" }
+mcrust-core = { path = "../mcrust-core" }
+mcrust-bridge = { path = "../mcrust-bridge" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

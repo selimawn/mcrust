@@ -144,9 +144,9 @@ Stratégie recommandée : **une paire de versions** par milestone (ex. Java 1.21
 | P2 | Java Status (liste serveur) — **fait** (`mcrust-java`) |
 | P3 | Bedrock Unconnected Ping/Pong — **fait** (`mcrust-bedrock`) |
 | P4 | `protocol` + `registry` minimal — **partiel** |
-| P5 | Login Java offline + play minimal |
-| P6 | Session Bedrock + join |
-| P7 | Monde plat, mouvement, cross-play |
+| P5 | Login Java (online/offline) + play minimal — **fait** (paquets 1.21 approx.) |
+| P6 | Session Bedrock + join — **partiel** (ping OK ; RakNet/login JWT **à faire**) |
+| P7 | Monde plat, mouvement, cross-play — **fait** (`mcrust-core` + bridge ; Java mouvement ; Bedrock stub LAN) |
 | P8+ | Blocs, inventaire, auth production |
 
 ## Documentation détaillée

@@ -7,6 +7,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+mcrust-bridge = { path = "../mcrust-bridge" }
+mcrust-protocol = { path = "../mcrust-protocol" }
+crossbeam-channel = "0.5"
+uuid = { version = "1", features = ["v4"] }
 thiserror.workspace = true
 tracing.workspace = true
 tokio = { version = "1", features = ["net", "rt", "macros", "sync"] }

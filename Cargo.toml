@@ -6,6 +6,8 @@ members = [
     "crates/mcrust-registry",
     "crates/mcrust-java",
     "crates/mcrust-bedrock",
+    "crates/mcrust-core",
+    "crates/mcrust-bridge",
     "crates/mcrust-server",
 ]
 default-members = ["crates/mcrust-server"]

@@ -11,3 +11,9 @@ pub enum JavaError {
     #[error("protocol: {0}")]
     Protocol(String),
 }
+
+impl JavaError {
+    pub fn protocol(msg: impl Into<String>) -> Self {
+        Self::Protocol(msg.into())
+    }
+}

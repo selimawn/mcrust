@@ -1,0 +1,13 @@
+[package]
+name = "mcrust-core"
+description = "Game simulation tick loop and player state"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+mcrust-protocol = { path = "../mcrust-protocol" }
+crossbeam-channel = "0.5"
+tracing.workspace = true
+uuid = { version = "1", features = ["v4"] }
