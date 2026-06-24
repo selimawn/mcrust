@@ -1,6 +1,6 @@
 [package]
 name = "mcrust-bedrock"
-description = "Minecraft Bedrock UDP (RakNet unconnected ping/pong)"
+description = "Minecraft Bedrock UDP (RakNet, login, play)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,8 +9,16 @@ repository.workspace = true
 [dependencies]
 mcrust-bridge = { path = "../mcrust-bridge" }
 mcrust-protocol = { path = "../mcrust-protocol" }
+mcrust-wire = { path = "../mcrust-wire" }
 crossbeam-channel = "0.5"
 uuid = { version = "1", features = ["v4"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+md-5 = "0.10"
+rand = "0.8"
+miniz_oxide = "0.8"
+rust-raknet = "0.12"
 thiserror.workspace = true
 tracing.workspace = true
 tokio = { version = "1", features = ["net", "rt", "macros", "sync"] }

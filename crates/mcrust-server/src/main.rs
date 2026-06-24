@@ -5,7 +5,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use mcrust_bedrock::{BedrockPingConfig, BedrockPlayConfig};
+use mcrust_bedrock::BedrockPlayConfig;
 use mcrust_bridge::{spawn_outbound_pump, BridgeRouter};
 use mcrust_core::{default_spawn, GameConfig, GameHandle};
 use mcrust_java::{JavaPlayConfig, JavaServerConfig, JavaStatusConfig, ServerKeys};
@@ -69,21 +69,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let bedrock = if cfg.enable_bedrock {
         let bedrock_bind = SocketAddr::from((Ipv4Addr::UNSPECIFIED, cfg.bedrock_port));
-        let ping_cfg = Arc::new(BedrockPingConfig {
-            motd_line: cfg.motd.clone(),
-            server_guid: 0x2D05F9D2E7BC4A1Fu64,
-            max_players: cfg.max_players,
-            online_players: 0,
-        });
         let play_cfg = Arc::new(BedrockPlayConfig {
             online_mode: cfg.bedrock_online_mode,
-            motd: cfg.motd.clone(),
+            motd: cfg.server_name.clone(),
         });
         let router_b = router.clone();
         Some(tokio::spawn(async move {
-            if let Err(e) =
-                mcrust_bedrock::run_bedrock_hybrid(bedrock_bind, ping_cfg, play_cfg, router_b).await
-            {
+            if let Err(e) = mcrust_bedrock::run_bedrock_server(bedrock_bind, play_cfg, router_b).await {
                 tracing::error!(error = %e, "bedrock listener exited");
             }
         }))
