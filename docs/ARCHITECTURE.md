@@ -169,6 +169,10 @@ Un seul type **`Player`** pour les deux plateformes, avec attribut **`platform: 
 - Java : [network/auth-java.md](network/auth-java.md)
 - Bedrock : [network/auth-bedrock.md](network/auth-bedrock.md)
 
+## Décisions figées
+
+Voir [DECISIONS.md](DECISIONS.md) (versions, crates, ECS, licence, etc.).
+
 ## Handoff initial
 
 La vision produit d’origine (performance, abstraction, bibliographie) reste la référence métier ; ce fichier en est la traduction technique structurée.
