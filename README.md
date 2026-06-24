@@ -1,3 +1,5 @@
+# AVERTISSEMENT
+Ce projet ne présente pour l'instant aucun résultat réel. L'implémentation des différentes fonctions n'est pas complète.
 # mcrust
 
 Serveur Minecraft **cross-play** (Java + Bedrock) écrit en Rust, sans proxy Geyser/Floodgate.
