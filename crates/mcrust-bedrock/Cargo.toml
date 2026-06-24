@@ -19,8 +19,12 @@ md-5 = "0.10"
 rand = "0.8"
 miniz_oxide = "0.8"
 rust-raknet = "0.12"
-p256 = { version = "0.13", features = ["ecdsa"] }
+p256 = { version = "0.13", features = ["ecdsa", "ecdh"] }
+aes = "0.8"
+ctr = "0.9"
+cipher = "0.4"
 jsonwebtoken = "9"
+pkcs8 = { version = "0.10", features = ["pem"] }
 sha2 = "0.10"
 thiserror.workspace = true
 tracing.workspace = true

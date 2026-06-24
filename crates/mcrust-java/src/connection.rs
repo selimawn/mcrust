@@ -205,7 +205,32 @@ async fn complete_login(
     if aes.is_none() {
         write_pkt(stream, aes, play::set_compression(256)).await?;
     }
-    write_pkt(stream, aes, play::finish_configuration()).await?;
+    write_pkt(stream, aes, crate::configuration::registry_data_minimal()).await?;
+    write_pkt(stream, aes, crate::configuration::finish_configuration()).await?;
+
+    let mut buf = Vec::new();
+    let mut in_config = true;
+    while in_config {
+        let mut chunk = [0u8; 4096];
+        let n = stream.read(&mut chunk).await?;
+        if n == 0 {
+            break;
+        }
+        let mut raw = chunk[..n].to_vec();
+        if let Some(a) = aes.as_mut() {
+            a.decrypt(&mut raw);
+        }
+        buf.extend_from_slice(&raw);
+        let packets = read_packets_from_buffer(&mut buf)?;
+        for (id, _) in packets {
+            if id == crate::configuration::S_ACK_FINISH
+                || id == crate::configuration::S_LOGIN_ACKNOWLEDGED
+            {
+                in_config = false;
+            }
+        }
+    }
+
     write_pkt(
         stream,
         aes,

@@ -13,6 +13,7 @@ pub mod login {
 pub mod configuration {
     pub const C_FINISH: i32 = 0x03;
     pub const C_KEEP_ALIVE: i32 = 0x04;
+    pub const C_REGISTRY_DATA: i32 = 0x07;
     pub const S_ACK_FINISH: i32 = 0x02;
 }
 

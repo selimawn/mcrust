@@ -6,7 +6,8 @@ use mcrust_protocol::{Gamemode, InboundEvent, JoinParams, OutboundCommand, Platf
 use rust_raknet::Reliability;
 use tracing::{info, warn};
 
-use crate::auth::{handshake_jwt_offline, parse_connection_request, verify_login_chain};
+use crate::auth::{parse_connection_request, verify_login_chain};
+use crate::ecdh::{decrypt_batch, encrypt_batch, parse_client_public_key_from_x5u};
 use crate::codec::{decode_batch_payload, encode_batch, parse_gamepacket};
 use crate::config::BedrockPlayConfig;
 use crate::packets::{
@@ -26,6 +27,7 @@ pub struct BedrockSessionState {
     pub out_rx: Option<Receiver<OutboundCommand>>,
     pub compress: bool,
     pub spawned: bool,
+    pub crypto: Option<crate::ecdh::BedrockSessionCrypto>,
 }
 
 impl Default for BedrockSessionState {
@@ -38,6 +40,7 @@ impl Default for BedrockSessionState {
             out_rx: None,
             compress: false,
             spawned: false,
+            crypto: Some(crate::ecdh::BedrockSessionCrypto::generate()),
         }
     }
 }
@@ -80,7 +83,12 @@ async fn process_payload(
     cfg: &BedrockPlayConfig,
     state: &mut BedrockSessionState,
 ) -> Result<(), String> {
-    let packets = decode_batch_payload(data, state.compress)?;
+        let data = if let (Some(crypto), Some(key)) = (&state.crypto, state.crypto.as_ref().and_then(|c| c.key_bytes)) {
+            decrypt_batch(data, &key)
+        } else {
+            data.to_vec()
+        };
+        let packets = decode_batch_payload(&data, state.compress)?;
     for pkt in packets {
         let (id, payload) = parse_gamepacket(&pkt)?;
         match id {
@@ -89,8 +97,12 @@ async fn process_payload(
                 if !SUPPORTED_PROTOCOLS.contains(&proto) {
                     return Err(format!("unsupported protocol {proto}"));
                 }
-                send_batch(socket, &[packets::network_settings(256, crate::codec::COMPRESSION_NONE)])
-                    .await?;
+                send_batch_enc(
+                    socket,
+                    &[packets::network_settings(256, crate::codec::COMPRESSION_NONE)],
+                    state,
+                )
+                .await?;
             }
             packets::PACKET_LOGIN => {
                 let conn = if payload.len() > 4 {
@@ -122,17 +134,26 @@ async fn process_payload(
                     online = identity.online,
                     "bedrock login accepted"
                 );
-                let hs = server_handshake(&handshake_jwt_offline());
-                send_batch(socket, &[hs]).await?;
+                if let Some(ref mut crypto) = state.crypto {
+                    if let Some(ref x5u) = identity.identity_public_key {
+                        if let Ok(client_pub) = parse_client_public_key_from_x5u(x5u) {
+                            crypto.derive_key_from_client_public_key(&client_pub);
+                        }
+                    }
+                    let jwt = crypto.server_handshake_jwt()?;
+                    let hs = server_handshake(jwt.as_bytes());
+                    send_batch_enc(socket, &[hs], state).await?;
+                }
             }
             0x04 => {
-                send_batch(
+                send_batch_enc(
                     socket,
                     &[
                         play_status(0),
                         resource_packs_info(),
                         resource_pack_stack(),
                     ],
+                    state,
                 )
                 .await?;
             }
@@ -151,13 +172,14 @@ async fn process_payload(
                     0.5,
                     "1.21.50",
                 );
-                send_batch(
+                send_batch_enc(
                     socket,
                     &[
                         play_status(3),
                         sg,
                         set_local_player_initialized(state.runtime_id),
                     ],
+                    state,
                 )
                 .await?;
             }
@@ -185,8 +207,15 @@ async fn process_payload(
     Ok(())
 }
 
-async fn send_batch(socket: &mut rust_raknet::RaknetSocket, packets: &[Vec<u8>]) -> Result<(), String> {
-    let batch = encode_batch(packets, false);
+async fn send_batch_enc(
+    socket: &mut rust_raknet::RaknetSocket,
+    packets: &[Vec<u8>],
+    state: &BedrockSessionState,
+) -> Result<(), String> {
+    let mut batch = encode_batch(packets, false);
+    if let Some(key) = state.crypto.as_ref().and_then(|c| c.key_bytes) {
+        batch = encrypt_batch(&batch, &key);
+    }
     socket
         .send(&batch, Reliability::ReliableOrdered)
         .await
@@ -194,6 +223,15 @@ async fn send_batch(socket: &mut rust_raknet::RaknetSocket, packets: &[Vec<u8>])
 }
 
 fn encode_outbound(cmd: &OutboundCommand, state: &BedrockSessionState) -> Option<Vec<u8>> {
+    let wrap = |pkt: Vec<u8>| {
+        let mut batch = encode_batch(&[pkt], false);
+        if let Some(crypto) = &state.crypto {
+            if let Some(key) = crypto.key_bytes {
+                batch = encrypt_batch(&batch, &key);
+            }
+        }
+        Some(batch)
+    };
     match cmd {
         OutboundCommand::BroadcastMovement {
             position,
@@ -201,35 +239,29 @@ fn encode_outbound(cmd: &OutboundCommand, state: &BedrockSessionState) -> Option
             pitch,
             on_ground,
             ..
-        } => {
-            let pkt = move_player(
-                state.runtime_id,
-                position.x as f32,
-                position.y as f32,
-                position.z as f32,
-                *yaw,
-                *pitch,
-                *on_ground,
-            );
-            Some(encode_batch(&[pkt], false))
-        }
+        } => wrap(move_player(
+            state.runtime_id,
+            position.x as f32,
+            position.y as f32,
+            position.z as f32,
+            *yaw,
+            *pitch,
+            *on_ground,
+        )),
         OutboundCommand::TeleportPlayer {
             position,
             yaw,
             pitch,
             ..
-        } => {
-            let pkt = move_player(
-                state.runtime_id,
-                position.x as f32,
-                position.y as f32,
-                position.z as f32,
-                *yaw,
-                *pitch,
-                true,
-            );
-            Some(encode_batch(&[pkt], false))
-        }
+        } => wrap(move_player(
+            state.runtime_id,
+            position.x as f32,
+            position.y as f32,
+            position.z as f32,
+            *yaw,
+            *pitch,
+            true,
+        )),
         _ => None,
     }
 }

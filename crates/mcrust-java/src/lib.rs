@@ -5,6 +5,7 @@ mod error;
 mod login;
 mod play;
 mod protocol;
+mod configuration;
 mod protocol_ids;
 mod server;
 

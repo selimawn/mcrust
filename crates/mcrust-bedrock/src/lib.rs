@@ -1,4 +1,5 @@
 mod auth;
+mod ecdh;
 mod jwt_auth;
 mod start_game;
 mod codec;

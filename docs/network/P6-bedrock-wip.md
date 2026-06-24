@@ -13,7 +13,7 @@
 | Sujet | État |
 |--------|------|
 | Vérification JWT (ES384, chaîne 1/3) | **Implémentée** (`jwt_auth.rs`, clé racine Mojang, `iss` Mojang, client data JWT) |
-| Handshake **ECDH** chiffrement paquets post-handshake | JWT serveur stub — pas encore ECDH complet comme vanilla |
+| Handshake **ECDH** + chiffrement batches | **Implémenté** (`ecdh.rs` — JWT signé ES384, SHA256(salt‖shared), AES-CTR) |
 | `StartGame` | Encodeur **PMMP field order** (`start_game.rs`) — ajuster `base_game_version` / proto si client kick |
 | Resource packs | Stack vide (OK pour serveur custom) |
 
