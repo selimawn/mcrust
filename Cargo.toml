@@ -3,6 +3,9 @@ resolver = "2"
 members = [
     "crates/mcrust-wire",
     "crates/mcrust-protocol",
+    "crates/mcrust-registry",
+    "crates/mcrust-java",
+    "crates/mcrust-bedrock",
     "crates/mcrust-server",
 ]
 default-members = ["crates/mcrust-server"]

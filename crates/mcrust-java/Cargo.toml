@@ -1,0 +1,16 @@
+[package]
+name = "mcrust-java"
+description = "Minecraft Java Edition TCP protocol (status, login path)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+mcrust-wire = { path = "../mcrust-wire" }
+thiserror.workspace = true
+tracing.workspace = true
+tokio = { version = "1", features = ["net", "io-util", "rt", "macros", "sync"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bytes = "1"

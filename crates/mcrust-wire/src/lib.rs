@@ -1,6 +1,7 @@
 //! Minecraft wire-format primitives (Java-oriented; Bedrock LE helpers later).
 
 pub mod error;
+pub mod packet;
 pub mod string;
 pub mod varint;
 

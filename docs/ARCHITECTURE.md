@@ -140,10 +140,10 @@ Stratégie recommandée : **une paire de versions** par milestone (ex. Java 1.21
 | Phase | Livrable |
 |-------|----------|
 | P0 | Repo, docs, CI `cargo test` / clippy |
-| P1 | `mcrust-wire` (VarInt, NBT) |
-| P2 | Java Status (liste serveur) |
-| P3 | Bedrock Unconnected Ping/Pong |
-| P4 | `protocol` + `registry` minimal |
+| P1 | `mcrust-wire` (VarInt, NBT, packet framing) — **fait** |
+| P2 | Java Status (liste serveur) — **fait** (`mcrust-java`) |
+| P3 | Bedrock Unconnected Ping/Pong — **fait** (`mcrust-bedrock`) |
+| P4 | `protocol` + `registry` minimal — **partiel** |
 | P5 | Login Java offline + play minimal |
 | P6 | Session Bedrock + join |
 | P7 | Monde plat, mouvement, cross-play |

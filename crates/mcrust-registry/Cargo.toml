@@ -1,0 +1,10 @@
+[package]
+name = "mcrust-registry"
+description = "Internal block/item ids and cross-platform mapping"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
