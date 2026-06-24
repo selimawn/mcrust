@@ -8,7 +8,9 @@ Serveur Minecraft **cross-play** (Java + Bedrock) écrit en Rust, sans proxy Gey
 |---------|---------|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Vue d’ensemble, couches, flux de données |
 | [docs/architecture/](docs/architecture/) | Cœur : joueur, monde, tick, ECS |
-| [docs/network/](docs/network/) | Java (TCP), Bedrock (UDP/RakNet), bridge |
+| [docs/network/](docs/network/) | Java, Bedrock, bridge, auth officielle |
+| [docs/server/conf.txt.md](docs/server/conf.txt.md) | Paramètres serveur (`conf.txt`) |
+| [conf.txt.example](conf.txt.example) | Exemple de configuration |
 
 ## Objectifs
 

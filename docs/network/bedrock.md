@@ -67,8 +67,9 @@ Ne jamais hardcoder un runtime ID dans le core.
 
 ## Auth Bedrock
 
-Production : chaîne **Xbox Live** / JWT, liaison compte.  
-MVP : mode LAN / whitelist simple / confiance locale — documenter les limites sécurité.
+**`bedrock-online-mode=true`** (défaut `conf.txt`) : vérification officielle JWT / Xbox — détail complet dans [auth-bedrock.md](auth-bedrock.md) (chaîne 3 liens Mojang, token OIDC multiplayer, handshake ECDH).
+
+**`bedrock-online-mode=false`** : développement / LAN uniquement (chaîne self-signed) — **ne pas** exposer sur Internet.
 
 ## Différences importantes vs Java
 

@@ -23,31 +23,31 @@ Recycle des IDs après despawn pour éviter la saturation (pool).
 | `Transform` | position (f64 ou fixed), yaw, pitch |
 | `Velocity` | dx, dy, dz |
 | `OnGround` | bool |
-| `Player` | `PlayerId`, gamemode interne |
+| `PlayerRef` | `PlayerId` — lien vers l’objet [Player](player.md) unifié |
 | `EntityType` | mob, item, projectile — phase ultérieure |
 | `ChunkObserver` | rayon de vue, dimension |
 | `NetworkSync` | dirty flags pour broadcast |
 
-Pas de logique dans les composants — données pures.
+Pas de logique dans les composants — données pures.  
+**Pas** de composants séparés `JavaPlayer` / `BedrockPlayer` : `platform` est sur `Player`.
 
 ## Systèmes
 
 Fonctions ou `System` trait qui :
 
-- query `(&mut Transform, &Velocity, &Player)`
-- lisent les ressources globales (`World`, `TickConfig`)
+- query `(&mut Transform, &Velocity, &PlayerRef)`
+- lisent les ressources globales (`World`, `PlayerIndex`, `TickConfig`)
 
 Exécution **séquentielle** dans le tick (pas de parallèle sur le même `World` au début).
 
-## Joueur = entité
+## Joueur = entité + Player
 
-À `PlayerJoin`, le core :
+À `PlayerJoin` :
 
-1. Alloue `PlayerId`.
-2. Spawn `Entity` avec `Player`, `Transform`, `ChunkObserver`, etc.
-3. Émet `OutboundCommand::SpawnPlayer` / équivalent pour les autres clients.
-
-Voir [player.md](player.md).
+1. Insérer `Player` dans `PlayerIndex` (avec `platform`, `uuid`, `xuid`, …).
+2. Spawn `Entity` avec `PlayerRef`, `Transform`, `ChunkObserver`, etc.
+3. Lier `player.entity = Some(entity)`.
+4. Émettre les `OutboundCommand` de visibilité.
 
 ## Relation monde ↔ ECS
 
@@ -55,8 +55,6 @@ Les **blocs** ne sont en général **pas** une entité par bloc (trop lourd).
 Ils vivent dans `Chunk` (palette + sections).  
 Les entités mobiles (joueurs, mobs) sont dans l’ECS.
 
-Exceptions futures : entités bloc (lit, coffre) si tu modélises l’interaction comme entité.
-
 ## Nettoyage
 
-`PlayerLeave` → despawn entité + retrait des index `PlayerId → Entity`.
+`PlayerLeave` → despawn entité + retrait `PlayerIndex`.

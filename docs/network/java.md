@@ -50,11 +50,11 @@ Aucune session joueur ; idéal pour valider VarInt + JSON + tokio.
 
 ## Phase Login
 
-- `Login Start` (username, UUID optionnel).
-- Mode **offline** : UUID dérivé du nom (Mojang v3/v4 selon config).
-- Mode **online** : enchaînement encryption request + auth Mojang (HTTP) — plus tard.
-- `Set Compression` (seuil) puis paquets compressés zlib si taille ≥ seuil.
-- `Login Success` → passage Configuration ou Play.
+- `Login Start` (username, UUID optionnel côté client — **ignoré** pour l’identité en online-mode).
+- **`online-mode=true`** (défaut dans `conf.txt`) : auth Mojang officielle — voir [auth-java.md](auth-java.md) (`Encryption Request`, `hasJoined`, `Login Success` avec profil Mojang).
+- **`online-mode=false`** : UUID dérivé du nom (convention offline) ; pas d’appel HTTP.
+- `Set Compression` (seuil `network-compression-threshold`) puis paquets zlib si taille ≥ seuil.
+- `Login Success` → Configuration (≥ 1.20.2) ou Play.
 
 ## Chiffrement (play online)
 

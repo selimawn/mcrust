@@ -9,6 +9,8 @@ Cette section documente tout ce qui touche aux **clients** : protocoles Java et 
 | [java.md](java.md) | TCP, machine d’états, paquets, chiffrement |
 | [bedrock.md](bedrock.md) | UDP, RakNet, GamePackets, cycle de vie |
 | [bridge.md](bridge.md) | Sessions, files, mapping, erreurs |
+| [auth-java.md](auth-java.md) | Online-mode Mojang (`hasJoined`) |
+| [auth-bedrock.md](auth-bedrock.md) | JWT / Xbox Live officiel |
 
 ## Ports par défaut
 

@@ -1,0 +1,51 @@
+# mcrust — exemple conf.txt (copier vers conf.txt)
+
+# --- Général ---
+server-name=mcrust
+motd=A mcrust cross-play server
+max-players=20
+view-distance=10
+simulation-distance=10
+gamemode=survival
+force-gamemode=false
+difficulty=normal
+hardcore=false
+pvp=true
+spawn-protection=16
+white-list=false
+enforce-whitelist=false
+player-idle-timeout=0
+
+# --- Java (TCP) ---
+server-ip=
+server-port=25565
+online-mode=true
+prevent-proxy-connections=false
+network-compression-threshold=256
+max-tick-time=60000
+
+# --- Bedrock (UDP) ---
+enable-bedrock=true
+bedrock-port=19132
+bedrock-online-mode=true
+bedrock-verify-server-address=true
+
+# --- Monde ---
+level-name=world
+level-seed=
+level-type=default
+generate-structures=true
+allow-nether=true
+spawn-monsters=true
+spawn-animals=true
+spawn-npcs=true
+
+# --- Performance ---
+target-tps=20
+max-chunk-send-per-tick=4
+network-queue-limit=1024
+
+# --- Admin ---
+op-permission-level=4
+enable-command-block=false
+broadcast-console-to-ops=true

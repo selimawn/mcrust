@@ -154,6 +154,21 @@ Stratégie recommandée : **une paire de versions** par milestone (ex. Java 1.21
 - Réseau : [network/README.md](network/README.md)
 - Architecture jeu : [architecture/README.md](architecture/README.md)
 
+## Configuration
+
+Paramètres serveur type Paper : fichier **`conf.txt`** — voir [server/conf.txt.md](server/conf.txt.md) et `conf.txt.example`.
+
+Clés auth : `online-mode` (Java), `bedrock-online-mode` (Bedrock).
+
+## Player unifié
+
+Un seul type **`Player`** pour les deux plateformes, avec attribut **`platform: Java | Bedrock`** pour les différences logiques et l’encodage réseau (bridge). Détail : [architecture/player.md](architecture/player.md).
+
+## Authentification officielle
+
+- Java : [network/auth-java.md](network/auth-java.md)
+- Bedrock : [network/auth-bedrock.md](network/auth-bedrock.md)
+
 ## Handoff initial
 
 La vision produit d’origine (performance, abstraction, bibliographie) reste la référence métier ; ce fichier en est la traduction technique structurée.

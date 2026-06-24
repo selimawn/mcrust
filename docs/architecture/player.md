@@ -1,84 +1,110 @@
-# Joueur
+# Player (objet unifié Java + Bedrock)
 
-Modèle **interne** du joueur : indépendant des paquets « Player » Java/Bedrock.
+Il n’existe **qu’un seul** type `Player` dans mcrust (core + bridge). Un joueur connecté en Java et un joueur Bedrock sont la **même abstraction** : même `PlayerId`, même entité ECS, même monde, même chat.
 
-## Identités
+La connexion réseau est modélisée à part (`Session`) ; `Player` représente le **compte / personnage** une fois authentifié.
 
-| Type | Usage |
+## Struct cible (conceptuelle)
+
+```rust
+// mcrust-core ou mcrust-protocol — noms indicatifs
+struct Player {
+    id: PlayerId,
+    platform: Platform,           // Java | Bedrock — attribut explicite
+    name: String,                 // nom vérifié (Mojang ou Xbox)
+    uuid: Uuid,                   // identité unifiée (Mojang UUID ou identity Bedrock)
+    xuid: Option<String>,         // rempli si platform == Bedrock (online)
+    gamemode: Gamemode,
+    entity: Option<Entity>,       // lien ECS après spawn
+    // permissions, stats — extensions
+}
+
+enum Platform {
+    Java,
+    Bedrock,
+}
+```
+
+**Règle** : le core manipule `Player` et `Platform` ; il ne distingue pas « JavaPlayer » vs « BedrockPlayer ».
+
+## Pourquoi `platform` ?
+
+Même objet, mais certaines **règles et encodages** dépendent de la plateforme **au niveau logique** (souvent dans le bridge, parfois dans le core) :
+
+| Sujet | Comportement selon `platform` |
+|-------|-------------------------------|
+| Mouvement / input | Sensibilité, packets source différents ; validation core commune |
+| Skin / apparence | Java : propriétés textures Mojang ; Bedrock : client data JWT |
+| Tab list / ping | Formats paquets différents |
+| Chat | JSON Java vs type Bedrock |
+| Forms / UI | Bedrock only → bridge ignore ou noop côté Java |
+| Hitbox / eye height | Légers écarts → constantes par `Platform` dans validation |
+| Auth déjà faite | Champs `uuid` / `xuid` remplis selon chemin [auth-java](../network/auth-java.md) / [auth-bedrock](../network/auth-bedrock.md) |
+
+Le core peut lire `player.platform` pour des branches **petites et documentées** (ex. portée interaction). Tout ce qui est **encodage réseau** reste dans `mcrust-java` / `mcrust-bedrock`.
+
+## Identifiants
+
+| Type | Portée |
 |------|--------|
-| `PlayerId` | Clé serveur stable (u32/u64) |
-| `SessionId` | Côté bridge — une connexion réseau |
-| UUID Java | Profil, whitelist, offline/online |
-| XUID Bedrock | Profil Xbox — phase auth |
+| `PlayerId` | Serveur, stable pour toute la session de jeu |
+| `SessionId` | Une connexion TCP/UDP ; **plusieurs sessions ne partagent pas un Player** en MVP |
+| `uuid` | Whitelist, bans, sauvegarde — **une colonne** pour les deux plateformes |
+| `xuid` | Bedrock online ; utile logs, modération, liaison compte |
 
-Un joueur en jeu est référencé par **`PlayerId`** dans le core.  
-Le bridge maintient `SessionId → PlayerId` (1:1 en MVP).
+Cross-play : deux amis (un Java, un Bedrock) = **deux `Player`** distincts, chacun avec son `platform`.
 
-## Profil (`PlayerProfile`)
+## Authentification → `Player`
 
-Données hors ECS ou en ressource globale :
+| Plateforme | Mode | Champs remplis |
+|------------|------|----------------|
+| Java | `online-mode=true` | `platform=Java`, `uuid`+`name` depuis `hasJoined` |
+| Java | `online-mode=false` | `platform=Java`, `uuid` offline dérivé |
+| Bedrock | `bedrock-online-mode=true` | `platform=Bedrock`, `xuid`, `uuid` identity, `name` vérifié |
+| Bedrock | offline/LAN | `platform=Bedrock`, dev seulement |
 
-- `display_name`
-- `uuid` / `xuid` optionnels
-- `platform` d’origine (pour stats, pas pour la physique)
-- permissions (op, whitelist) — phase ultérieure
+Le bridge crée le `Player` **après** auth réussie, puis envoie `InboundEvent::PlayerJoin { player, ... }` au core.
 
 ## Cycle de vie
 
 ```mermaid
 sequenceDiagram
+  participant Net as Java/Bedrock
+  participant Auth as Auth layer
   participant B as Bridge
   participant C as Core
-  participant E as ECS
-  B->>C: InboundEvent::PlayerJoin
-  C->>E: spawn entity + components
-  C->>B: OutboundCommand broadcast spawn
-  Note over B,C: Play loop
-  B->>C: InboundEvent::PlayerInput
-  C->>B: OutboundCommand position/teleport
-  B->>C: InboundEvent::PlayerLeave
-  C->>E: despawn
+  Net->>Auth: login packets
+  Auth->>B: Player authentifié
+  B->>C: PlayerJoin(Player)
+  C->>C: spawn ECS + World
+  C->>B: Outbound spawn/tab/chunk
+  B->>Net: encodage selon session.platform
 ```
 
-## Input
+`Session.platform` doit correspondre à `Player.platform` (assert en debug).
 
-`PlayerInput` agrège par tick (le bridge peut fusionner plusieurs paquets mouvement entre deux ticks) :
+## Composants ECS
 
-- position cible ou delta (choix : style Java « position » validée serveur)
-- yaw / pitch
-- flags : sprint, sneak, jump, on ground
-- interactions : use, dig (événements séparés)
+L’entité porte typiquement :
 
-Le core **valide** : anti-cheat minimal (vitesse max, fly si survival), puis met à jour `Velocity` / téléporte.
+- `PlayerRef { id: PlayerId }` — pas dupliquer tout le struct dans l’ECS
+- `Transform`, `Velocity`, `ChunkObserver`, …
 
-## Gamemode
+Les données profil (`name`, `uuid`, `platform`) vivent dans une **ressource** `PlayerIndex: HashMap<PlayerId, Player>` ou équivalent.
 
-Enum interne : `Survival`, `Creative`, `Adventure`, `Spectator`.  
-Mapping depuis paquets login Bedrock/Java au join.
+## Input et gameplay
 
-## Visibilité et tab list
+`InboundEvent::PlayerInput { player_id, ... }` — le core ne reçoit pas de paquets bruts.
 
-- **Tab list** : `OutboundCommand` dédié ou partie du join — encodé différemment Java vs Bedrock.
-- **Visibilité entités** : système qui, pour chaque `ChunkObserver`, calcule le set d’entités visibles et émet spawn/despawn/metadata.
+Validation mouvement **commune** ; si un jour Bedrock autorise une mécanique absente sur Java (ex. nage spécifique), la règle peut consulter `Player::platform`.
 
-Distance de tracking configurable (chunks × 16).
+## Déconnexion
 
-## Chat
+Dernière session d’un `Player` fermée → `PlayerLeave` → despawn entité, retrait `PlayerIndex`.
 
-`InboundEvent::Chat` → broadcast `OutboundCommand::Chat` avec filtre (commandes, mute).
+## Ce qui n’est pas dans `Player`
 
-Format interne : texte + optionnel JSON rich text simplifié ; le bridge formate en JSON Java / type Bedrock.
+- Clés AES, état RakNet, machine d’états protocole → `Session`
+- Runtime IDs blocs → `registry` au bridge
 
-## Inventaire (phase ultérieure)
-
-Composant `Inventory` + `HeldItem`.  
-Synchronisation slot par slot via commands ; mapping items via `mcrust-registry`.
-
-## Cross-play
-
-Java et Bedrock partagent :
-
-- la même position dans le monde (avec adaptation hitbox si nécessaire côté bridge),
-- le même `PlayerId` pour les interactions (chat, PvP futur).
-
-Skins et cape : cosmétique réseau — optionnel, pas dans le core.
+Voir [../network/bridge.md](../network/bridge.md) et [../server/conf.txt.md](../server/conf.txt.md).

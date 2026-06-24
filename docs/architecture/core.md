@@ -8,7 +8,7 @@ Crate du **moteur de jeu** : monde, entités, règles, simulation.
 |----------|----------------|
 | Tick 20 TPS | TCP/UDP, RakNet |
 | ECS / entités | Encodage paquets |
-| Chunks et modifications | Auth Mojang / Xbox |
+| Chunks et modifications | Auth (déléguée au bridge avant `PlayerJoin`) |
 | Physique / collisions (phases) | Status ping JSON brut |
 | Règles gamerules internes | Mapping runtime Bedrock |
 

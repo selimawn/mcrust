@@ -9,7 +9,7 @@ Documentation du **moteur** : tout ce qui tourne à 20 TPS sans connaître Java 
 | [core.md](core.md) | Crate `mcrust-core`, responsabilités, frontières |
 | [tick.md](tick.md) | Boucle 50 ms, ordre des systèmes, lag |
 | [ecs.md](ecs.md) | Entités, composants, systèmes |
-| [player.md](player.md) | Joueur, profil, input, visibilité |
+| [player.md](player.md) | **Player unifié** Java+Bedrock, champ `platform` |
 | [world.md](world.md) | Dimensions, chunks, blocs, lumière (phases) |
 
 ## Règle d’or
