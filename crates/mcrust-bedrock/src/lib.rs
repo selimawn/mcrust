@@ -1,4 +1,6 @@
 mod auth;
+mod jwt_auth;
+mod start_game;
 mod codec;
 mod config;
 mod packets;

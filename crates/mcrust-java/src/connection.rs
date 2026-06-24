@@ -10,7 +10,7 @@ use tokio::net::TcpStream;
 use crate::auth::{format_uuid_with_dashes, has_joined, minecraft_server_hash, offline_uuid};
 use crate::crypto::{random_bytes, AesStream, ServerKeys};
 use crate::login::{
-    decode_encryption_response, decode_login_start, encode_encryption_request, encode_login_success,
+    decode_encryption_response, decode_login_start, encode_encryption_request,
     ENCRYPTION_RESPONSE, LOGIN_START,
 };
 use crate::play;
@@ -137,14 +137,15 @@ pub async fn handle_java_connection(
 
             if let Some(pid) = player_id {
                 match id {
-                    0x1b if payload.len() >= 8 => {
-                        let ka = i64::from_be_bytes(payload[0..8].try_into().unwrap());
-                        router.forward_inbound(InboundEvent::KeepAliveAck {
-                            player_id: pid,
-                            payload: ka,
-                        });
+                    crate::protocol_ids::play::S_KEEP_ALIVE => {
+                        if let Ok((ka, _)) = mcrust_wire::varint::read_var_long(&payload) {
+                            router.forward_inbound(InboundEvent::KeepAliveAck {
+                                player_id: pid,
+                                payload: ka,
+                            });
+                        }
                     }
-                    0x1a => {
+                    crate::protocol_ids::play::S_POSITION_LOOK | crate::protocol_ids::play::S_POSITION => {
                         if let Some((x, y, z, yaw, pitch, on_ground)) = decode_pos(&payload) {
                             router.forward_inbound(InboundEvent::PlayerInput {
                                 player_id: pid,
@@ -200,16 +201,21 @@ async fn complete_login(
         Ok(())
     }
 
-    write_pkt(stream, aes, encode_login_success(&uuid.to_string(), name)).await?;
+    write_pkt(stream, aes, play::login_success(&uuid.to_string(), name)).await?;
     if aes.is_none() {
         write_pkt(stream, aes, play::set_compression(256)).await?;
     }
     write_pkt(stream, aes, play::finish_configuration()).await?;
-    write_pkt(stream, aes, play::login_play_join_game(entity_id)).await?;
     write_pkt(
         stream,
         aes,
-        play::synchronize_position(0.5, 64.0, 0.5, 0.0, 0.0),
+        play::play_login(entity_id, "minecraft:overworld", "minecraft:overworld", 100, 10, 10),
+    )
+    .await?;
+    write_pkt(
+        stream,
+        aes,
+        play::synchronize_player_position(0.5, 64.0, 0.5, 0.0, 0.0),
     )
     .await?;
 
@@ -238,7 +244,7 @@ fn encode_command(cmd: &OutboundCommand) -> Option<Vec<u8>> {
             yaw,
             pitch,
             ..
-        } => Some(play::synchronize_position(
+        } => Some(play::synchronize_player_position(
             position.x,
             position.y,
             position.z,

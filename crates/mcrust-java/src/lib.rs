@@ -5,6 +5,7 @@ mod error;
 mod login;
 mod play;
 mod protocol;
+mod protocol_ids;
 mod server;
 
 pub use crypto::ServerKeys;

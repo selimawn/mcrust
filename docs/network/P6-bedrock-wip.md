@@ -12,9 +12,9 @@
 
 | Sujet | État |
 |--------|------|
-| Vérification **cryptographique** JWT (ES384, clé Mojang) | Partielle — parsing claims, pas de vérif signature complète |
-| Handshake **ECDH** chiffrement paquets | JWT handshake **offline stub** |
-| `StartGame` | Encodeur **minimal** — champs récents 1.21 peuvent manquer → crash client si version stricte |
+| Vérification JWT (ES384, chaîne 1/3) | **Implémentée** (`jwt_auth.rs`, clé racine Mojang, `iss` Mojang, client data JWT) |
+| Handshake **ECDH** chiffrement paquets post-handshake | JWT serveur stub — pas encore ECDH complet comme vanilla |
+| `StartGame` | Encodeur **PMMP field order** (`start_game.rs`) — ajuster `base_game_version` / proto si client kick |
 | Resource packs | Stack vide (OK pour serveur custom) |
 
 ## Fichiers

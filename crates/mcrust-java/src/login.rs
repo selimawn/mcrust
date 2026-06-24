@@ -2,10 +2,10 @@ use mcrust_wire::packet::write_packet;
 use mcrust_wire::string::{read_string, write_string};
 use mcrust_wire::varint::{read_var_int, write_var_int};
 
-pub const LOGIN_START: i32 = 0x00;
-pub const ENCRYPTION_REQUEST: i32 = 0x01;
-pub const ENCRYPTION_RESPONSE: i32 = 0x01;
-pub const LOGIN_SUCCESS: i32 = 0x02;
+pub const LOGIN_START: i32 = crate::protocol_ids::login::S_LOGIN_START;
+pub const ENCRYPTION_REQUEST: i32 = crate::protocol_ids::login::C_ENCRYPTION_BEGIN;
+pub const ENCRYPTION_RESPONSE: i32 = crate::protocol_ids::login::S_ENCRYPTION_BEGIN;
+pub const LOGIN_SUCCESS: i32 = crate::protocol_ids::login::C_LOGIN_SUCCESS;
 
 pub fn decode_login_start(payload: &[u8]) -> Result<(String, Option<String>), mcrust_wire::WireError> {
     let (name, rest) = read_string(payload, 16)?;

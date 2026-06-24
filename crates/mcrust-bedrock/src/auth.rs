@@ -34,6 +34,8 @@ pub struct BedrockIdentity {
     pub uuid: Uuid,
     pub xuid: Option<String>,
     pub online: bool,
+    /// Base64 PKIX from JWT chain (verifies client data JWT).
+    pub identity_public_key: Option<String>,
 }
 
 pub fn parse_connection_request(data: &[u8]) -> Result<(Vec<u8>, String), String> {
@@ -69,18 +71,11 @@ pub fn verify_login_chain(
         .map(|c| c.chain)
         .or(wrapper.chain)
         .ok_or_else(|| "no chain".to_string())?;
-    if chain.is_empty() {
-        return Err("empty chain".into());
-    }
-    let online = chain.len() >= 3;
-    if online_mode && !online {
-        return Err("online mode requires xbox chain".into());
-    }
-    let extra = decode_extra_data_from_chain(&chain[chain.len() - 1])?;
+    let (extra, online) = crate::jwt_auth::verify_login_chain(&chain, online_mode)?;
     let uuid = if !extra.identity.is_empty() {
         Uuid::parse_str(&extra.identity).unwrap_or_else(|_| Uuid::new_v4())
     } else if !extra.xuid.is_empty() {
-        identity_from_xuid(&extra.xuid)
+        crate::jwt_auth::identity_from_xuid(&extra.xuid)
     } else {
         Uuid::new_v4()
     };
@@ -97,9 +92,11 @@ pub fn verify_login_chain(
             Some(extra.xuid)
         },
         online,
+        identity_public_key: crate::jwt_auth::public_key_from_chain(&chain),
     })
 }
 
+#[allow(dead_code)]
 fn decode_extra_data_from_chain(jwt: &str) -> Result<ExtraData, String> {
     let payload = jwt_payload_b64(jwt)?;
     let v: serde_json::Value = serde_json::from_str(&payload).map_err(|e| e.to_string())?;
@@ -151,13 +148,5 @@ pub fn identity_from_xuid(xuid: &str) -> Uuid {
 }
 
 pub fn handshake_jwt_offline() -> Vec<u8> {
-    let header = base64::engine::general_purpose::URL_SAFE_NO_PAD
-        .encode(br#"{"alg":"ES256","typ":"JWT"}"#);
-    let mut claims = BTreeMap::new();
-    claims.insert("salt", "");
-    claims.insert("exp", "9999999999");
-    let payload = serde_json::to_string(&claims).unwrap();
-    let payload_b64 =
-        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(payload.as_bytes());
-    format!("{header}.{payload_b64}.offline").into_bytes()
+    crate::jwt_auth::handshake_jwt_server()
 }

@@ -42,6 +42,41 @@ pub fn write_var_int(mut value: i32, out: &mut Vec<u8>) {
 }
 
 /// Length in bytes of encoded VarInt.
+pub fn read_var_long(mut buf: &[u8]) -> WireResult<(i64, &[u8])> {
+    let mut value: u64 = 0;
+    let mut size = 0u32;
+    loop {
+        if buf.is_empty() {
+            return Err(WireError::Eof);
+        }
+        let b = buf[0];
+        buf = &buf[1..];
+        value |= ((b & VARINT_VALUE_MASK) as u64) << size;
+        size += 7;
+        if b & VARINT_CONTINUE_BIT == 0 {
+            break;
+        }
+        if size > 63 {
+            return Err(WireError::VarIntTooLong);
+        }
+    }
+    Ok((value as i64, buf))
+}
+
+pub fn write_var_long(mut value: i64, out: &mut Vec<u8>) {
+    loop {
+        let mut temp = (value as u8) & VARINT_VALUE_MASK;
+        value = ((value as u64) >> 7) as i64;
+        if value != 0 {
+            temp |= VARINT_CONTINUE_BIT;
+        }
+        out.push(temp);
+        if value == 0 {
+            break;
+        }
+    }
+}
+
 pub fn var_int_len(value: i32) -> usize {
     let mut len = 0;
     let mut v = value;

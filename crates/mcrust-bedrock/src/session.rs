@@ -11,7 +11,7 @@ use crate::codec::{decode_batch_payload, encode_batch, parse_gamepacket};
 use crate::config::BedrockPlayConfig;
 use crate::packets::{
     self, move_player, play_status, resource_pack_stack, resource_packs_info,
-    server_handshake, set_local_player_initialized, start_game_minimal,
+    server_handshake, set_local_player_initialized,
     PACKET_REQUEST_NETWORK_SETTINGS,
 };
 
@@ -100,8 +100,11 @@ async fn process_payload(
                 } else {
                     &payload[..]
                 };
-                let (chain, _client_jwt) = parse_connection_request(conn)?;
+                let (chain, client_jwt) = parse_connection_request(conn)?;
                 let identity = verify_login_chain(&chain, cfg.online_mode)?;
+                if let Some(ref key) = identity.identity_public_key {
+                    let _ = crate::jwt_auth::verify_client_data_jwt(&client_jwt, key);
+                }
                 let (tx, rx) = crossbeam_channel::unbounded();
                 let join = JoinParams {
                     name: identity.display_name.clone(),
@@ -138,13 +141,15 @@ async fn process_payload(
                     continue;
                 }
                 state.spawned = true;
-                let sg = start_game_minimal(
+                let sg = crate::start_game::encode_start_game(
                     state.unique_id,
                     state.runtime_id,
                     &state.display_name,
+                    &cfg.motd,
                     0.5,
                     64.0,
                     0.5,
+                    "1.21.50",
                 );
                 send_batch(
                     socket,

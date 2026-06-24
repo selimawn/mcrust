@@ -32,7 +32,7 @@ pub async fn has_joined(
 
 pub fn minecraft_server_hash(server_id: &str, secret: &[u8; 16], public_key_der: &[u8]) -> String {
     let mut hasher = Sha1::new();
-    hasher.update(server_id.as_bytes());
+    hasher.update(server_id.as_bytes()); // ISO-8859-1 compatible for ASCII server id
     hasher.update(secret);
     hasher.update(public_key_der);
     let digest = hasher.finalize();
