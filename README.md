@@ -23,6 +23,11 @@ Serveur Minecraft **cross-play** (Java + Bedrock) écrit en Rust, sans proxy Gey
 - Java : [wiki.vg — Protocol](https://wiki.vg/Protocol)
 - Bedrock : [Mojang/bedrock-protocol-docs](https://github.com/Mojang/bedrock-protocol-docs)
 
+## Crédits
+
+Projet **mcrust** — https://github.com/selimawn/mcrust  
+Les œuvres dérivées ou renommées doivent créditer ce projet en tête de leur documentation (voir [LICENSE](LICENSE)).
+
 ## État du projet
 
-Phase **plan / fondations** — voir la roadmap dans [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Workspace Rust : `mcrust-wire`, `mcrust-protocol`, `mcrust-server`. Voir [docs/DECISIONS.md](docs/DECISIONS.md) et [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

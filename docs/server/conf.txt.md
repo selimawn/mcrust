@@ -77,8 +77,8 @@ Chargement au démarrage ; certaines clés nécessitent un redémarrage (indiqu�
 
 | Clé | Défaut | Description |
 |-----|--------|-------------|
-| `java-protocol-version` | (auto) | Version Java supportée (ex. `767` pour 1.21.1) |
-| `bedrock-protocol-version` | (auto) | Version Bedrock (entier packet) |
+| `java-supported-versions` | (liste interne) | Plage de versions Java négociées au handshake (voir DECISIONS D-002) |
+| `bedrock-supported-protocols` | (liste interne) | Deux patchs 1.21.x — entiers protocole (DECISIONS D-003) |
 
 ## Fichiers liés
 

@@ -1,0 +1,18 @@
+[package]
+name = "mcrust-server"
+description = "mcrust server binary"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "mcrust"
+path = "src/main.rs"
+
+[dependencies]
+mcrust-wire = { path = "../mcrust-wire" }
+mcrust-protocol = { path = "../mcrust-protocol" }
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
