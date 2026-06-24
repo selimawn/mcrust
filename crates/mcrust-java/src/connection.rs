@@ -170,6 +170,81 @@ pub async fn handle_java_connection(
     Ok(())
 }
 
+async fn wait_login_acknowledged(
+    stream: &mut TcpStream,
+    aes: &mut Option<AesStream>,
+) -> Result<(), JavaError> {
+    let mut buf = Vec::new();
+    loop {
+        let mut chunk = [0u8; 4096];
+        let n = stream.read(&mut chunk).await?;
+        if n == 0 {
+            return Err(JavaError::Protocol("eof before login acknowledged".into()));
+        }
+        let mut raw = chunk[..n].to_vec();
+        if let Some(a) = aes.as_mut() {
+            a.decrypt(&mut raw);
+        }
+        buf.extend_from_slice(&raw);
+        let packets = read_packets_from_buffer(&mut buf)?;
+        for (id, payload) in packets {
+            if id == crate::configuration::S_LOGIN_ACKNOWLEDGED {
+                return Ok(());
+            }
+            if id == crate::configuration::S_KEEP_ALIVE {
+                if let Ok((ka, _)) = mcrust_wire::varint::read_var_long(&payload) {
+                    write_pkt_enc(stream, aes, crate::configuration::configuration_keep_alive(ka))
+                        .await?;
+                }
+            }
+        }
+    }
+}
+
+async fn wait_configuration_finish(
+    stream: &mut TcpStream,
+    aes: &mut Option<AesStream>,
+) -> Result<(), JavaError> {
+    let mut buf = Vec::new();
+    loop {
+        let mut chunk = [0u8; 4096];
+        let n = stream.read(&mut chunk).await?;
+        if n == 0 {
+            return Err(JavaError::Protocol("eof before configuration finish".into()));
+        }
+        let mut raw = chunk[..n].to_vec();
+        if let Some(a) = aes.as_mut() {
+            a.decrypt(&mut raw);
+        }
+        buf.extend_from_slice(&raw);
+        let packets = read_packets_from_buffer(&mut buf)?;
+        for (id, payload) in packets {
+            if id == crate::configuration::S_ACK_FINISH {
+                return Ok(());
+            }
+            if id == crate::configuration::S_KEEP_ALIVE {
+                if let Ok((ka, _)) = mcrust_wire::varint::read_var_long(&payload) {
+                    write_pkt_enc(stream, aes, crate::configuration::configuration_keep_alive(ka))
+                        .await?;
+                }
+            }
+        }
+    }
+}
+
+async fn write_pkt_enc(
+    stream: &mut TcpStream,
+    aes: &mut Option<AesStream>,
+    data: Vec<u8>,
+) -> Result<(), JavaError> {
+    let mut data = data;
+    if let Some(a) = aes.as_mut() {
+        a.encrypt(&mut data);
+    }
+    stream.write_all(&data).await?;
+    Ok(())
+}
+
 async fn complete_login(
     router: &BridgeRouter,
     name: &str,
@@ -188,56 +263,25 @@ async fn complete_login(
     let pid = router.player_join(join, session_tx);
     let entity_id = (rand::random::<u32>() & 0x7fff_ffff) as i32;
 
-    async fn write_pkt(
-        stream: &mut TcpStream,
-        aes: &mut Option<AesStream>,
-        data: Vec<u8>,
-    ) -> Result<(), JavaError> {
-        let mut data = data;
-        if let Some(a) = aes.as_mut() {
-            a.encrypt(&mut data);
-        }
-        stream.write_all(&data).await?;
-        Ok(())
-    }
-
-    write_pkt(stream, aes, play::login_success(&uuid.to_string(), name)).await?;
+    write_pkt_enc(stream, aes, play::login_success(&uuid.to_string(), name)).await?;
     if aes.is_none() {
-        write_pkt(stream, aes, play::set_compression(256)).await?;
-    }
-    write_pkt(stream, aes, crate::configuration::registry_data_minimal()).await?;
-    write_pkt(stream, aes, crate::configuration::finish_configuration()).await?;
-
-    let mut buf = Vec::new();
-    let mut in_config = true;
-    while in_config {
-        let mut chunk = [0u8; 4096];
-        let n = stream.read(&mut chunk).await?;
-        if n == 0 {
-            break;
-        }
-        let mut raw = chunk[..n].to_vec();
-        if let Some(a) = aes.as_mut() {
-            a.decrypt(&mut raw);
-        }
-        buf.extend_from_slice(&raw);
-        let packets = read_packets_from_buffer(&mut buf)?;
-        for (id, _) in packets {
-            if id == crate::configuration::S_ACK_FINISH
-                || id == crate::configuration::S_LOGIN_ACKNOWLEDGED
-            {
-                in_config = false;
-            }
-        }
+        write_pkt_enc(stream, aes, play::set_compression(256)).await?;
     }
 
-    write_pkt(
+    wait_login_acknowledged(stream, aes).await?;
+
+    write_pkt_enc(stream, aes, crate::configuration::registry_data_minimal()).await?;
+    write_pkt_enc(stream, aes, crate::configuration::finish_configuration()).await?;
+
+    wait_configuration_finish(stream, aes).await?;
+
+    write_pkt_enc(
         stream,
         aes,
         play::play_login(entity_id, "minecraft:overworld", "minecraft:overworld", 100, 10, 10),
     )
     .await?;
-    write_pkt(
+    write_pkt_enc(
         stream,
         aes,
         play::synchronize_player_position(0.5, 64.0, 0.5, 0.0, 0.0),

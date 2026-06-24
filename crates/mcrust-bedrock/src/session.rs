@@ -83,7 +83,7 @@ async fn process_payload(
     cfg: &BedrockPlayConfig,
     state: &mut BedrockSessionState,
 ) -> Result<(), String> {
-        let data = if let (Some(crypto), Some(key)) = (&state.crypto, state.crypto.as_ref().and_then(|c| c.key_bytes)) {
+        let data = if let Some(key) = state.crypto.as_ref().and_then(|c| c.key_bytes) {
             decrypt_batch(data, &key)
         } else {
             data.to_vec()

@@ -8,6 +8,7 @@ repository.workspace = true
 
 [dependencies]
 mcrust-wire = { path = "../mcrust-wire" }
+fastnbt.workspace = true
 mcrust-protocol = { path = "../mcrust-protocol" }
 mcrust-bridge = { path = "../mcrust-bridge" }
 thiserror.workspace = true
